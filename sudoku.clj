@@ -199,7 +199,7 @@
 (def grid2 "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......")
 (def hard1 ".....6....59.....82....8....45........3........6..3.54...325..6..................")
 
-(def data-dir "/Users/neo/Code/Python/Projects/Sudoku/")
+(def data-dir "./")
 
 ;; Expected to be run at the REPL
 (defn run []
@@ -209,5 +209,5 @@
   (solve-all (from-file (str data-dir "hardest.txt")) "hardest")
   (solve-all (repeatedly 99 random-puzzle) "random"))
 
-
+(run)
 
