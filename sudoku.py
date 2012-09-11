@@ -82,8 +82,7 @@ def eliminate(values, s, d):
     if len(values[s]) == 0:
         return False ## Contradiction: removed last value
     elif len(values[s]) == 1:
-        d2 = values[s]
-        if not all(eliminate(values, s2, d2) for s2 in peers[s]):
+        if not all(eliminate(values, s2, values[s]) for s2 in peers[s]):
             return False
     ## (2) If a unit u is reduced to only one place for a value d, then put it there.
     for u in units[s]:
@@ -110,7 +109,8 @@ def display(values):
 
 ################ Search ################
 
-def solve(grid): return search(parse_grid(grid))
+def solve(grid):
+    return search(parse_grid(grid))
 
 def search(values):
     "Using depth-first search and propagation, try all possible values."
@@ -120,8 +120,7 @@ def search(values):
         return values ## Solved!
     ## Chose the unfilled square s with the fewest possibilities
     n,s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
-    return some(search(assign(values.copy(), s, d))
-                for d in values[s])
+    return some(search(assign(values.copy(), s, d)) for d in values[s])
 
 ################ Utilities ################
 
@@ -171,14 +170,17 @@ def solved(values):
     return values is not False and all(unitsolved(unit) for unit in unitlist)
 
 def random_puzzle(N=17):
-    """Make a random puzzle by making N assignments. Restart on contradictions.
+    """Make a random puzzle with N or more assignments. Restart on contradictions.
     Note the resulting puzzle is not guaranteed to be solvable, but empirically
-    about 99.8% of them are solvable."""
+    about 99.8% of them are solvable. Some have multiple solutions."""
     values = dict((s, digits) for s in squares)
-    for s in random.sample(squares, N):
+    for s in shuffled(squares):
         if not assign(values, s, random.choice(values[s])):
-            return random_puzzle(N) ## Give up and make a new puzzle
-    return ''.join(values[s] if len(values[s])==1 else '.' for s in squares)
+            break
+        ds = [values[s] for s in squares if len(values[s]) == 1]
+        if len(ds) >= N and len(set(ds)) >= 8:
+            return ''.join(values[s] if len(values[s])==1 else '.' for s in squares)
+    return random_puzzle(N) ## Give up and make a new puzzle
 
 grid1  = '003020600900305001001806400008102900700000008006708200002609500800203009005010300'
 grid2  = '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......'
