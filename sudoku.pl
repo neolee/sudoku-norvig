@@ -15,8 +15,7 @@
 use strict;
 use warnings;
 use v5.16;
-use List::MoreUtils qw(all any zip each_array each_arrayref);
-use List::Util qw( reduce max shuffle sum );
+use List::AllUtils qw(all first zip each_array each_arrayref reduce max shuffle sum);
 use Storable qw(dclone);
 use File::Slurp;
 use Time::HiRes qw( time );
@@ -104,21 +103,15 @@ sub parse_grid {
     my $grid   = shift;
     my $values = {};
     $values->{$_} = $digits for ( @{$squares} );
-    my %g = %{ grid_values($grid) };
+    my @chars = grep { $_ =~ m/[123456789\.]/ } split( //, $grid );
+    die "Something is wrong" unless ( scalar(@chars) == 81 );
+    my %g = zip @{$squares}, @chars;
     while ( my ( $s, $d ) = each %g ) {
-        if ( ( $d =~ m/\d/ ) && ( assign( $values, $s, $d ) == 0 ) ) {
+        if ( ( $d =~ m/[^.]/ ) && ( assign( $values, $s, $d ) == 0 ) ) {
             return 0;
         }
     }
     return $values;
-}
-
-sub grid_values {
-    my $grid = shift;
-    my @chars = grep { $_ =~ m/[123456789\.]/ } split( //, $grid );
-    die "Something is wrong" unless ( scalar(@chars) == 81 );
-    my %dict = zip @{$squares}, @chars;
-    return \%dict;
 }
 
 ################ Constraint Propagation ################
@@ -126,6 +119,7 @@ sub grid_values {
 sub assign {
     my ( $values, $s, $d ) = @_;
     return $values if (all {eliminate($values,$s,$_)} grep {$_ ne $d} split(//,$values->{$s}) );
+    #return $values if (all { eliminate($values,$s,$_) } grep {($_ ne $d) && (index($values->{$s},$_) >= 0) } @$cols );
     return 0;
 }
 
@@ -165,12 +159,11 @@ sub solve {
 sub search {
     my $values = shift;
     return 0 if ( $values == 0 );
-    return $values if ( all { length( $values->{$_} ) == 1 } @{$squares} );
+    return $values if ( all { length( $values->{$_} ) == 1 } @{$squares} ); # solved!
 
-    # solved!
     my $s =
       reduce { length( $values->{$a} ) < length( $values->{$b} ) ? $a : $b }
-    grep { length( $values->{$_} ) > 1 } @{$squares};
+        grep { length( $values->{$_} ) > 1 } @{$squares};
 
     my $some = 0;
     for ( split( //, $values->{$s} ) ) {
