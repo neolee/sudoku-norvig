@@ -125,7 +125,7 @@ sub assign {
 
 sub eliminate {
     my ( $values, $s, $d ) = @_;
-    return $values unless ( index( $values->{$s}, $d ) != -1 );
+    return $values unless ( index( $values->{$s}, $d ) >= 0 );
     $values->{$s} =~ s/$d//;
     my $len = length( $values->{$s} );
     if ( $len == 0 ) {
@@ -137,7 +137,7 @@ sub eliminate {
             @{ $peers{$s} } );
     }
     for my $u ( @{ $units{$s} } ) {
-        my @dplaces = grep { index( $values->{$_}, $d ) != -1 } @$u;
+        my @dplaces = grep { index( $values->{$_}, $d ) >= 0 } @$u;
         $len = scalar(@dplaces);
         if ( $len == 0 ) {
             return 0;
@@ -185,7 +185,6 @@ sub time_solve {
     my $grid   = shift;
     my $start  = time();
     my $values = solve($grid);
-    #say print_grid($values);
     my $t      = time() - $start;
     return ( $t, solved($values) );
 }
@@ -214,8 +213,7 @@ sub solve_all {
         push @results, $result;
     }
     if ( $N > 1 ) {
-        printf
-"Solved %d of %d %s puzzles (avg %.2f secs (%d Hz), max %.2f secs).\n",
+        printf "Solved %d of %d %s puzzles (avg %.2f secs (%d Hz), max %.2f secs).\n",
           sum(@results), $N, $name, sum(@times) / $N, $N / sum(@times),
           max(@times);
     }
@@ -234,7 +232,6 @@ sub solved {
 }
 
 sub random_puzzle {
-
     my $N      = shift;
     my $values = {};
     $values->{$_} = $digits for ( @{$squares} );
@@ -255,20 +252,14 @@ sub random_puzzle {
 
 }
 
-my $grid1 =
-'..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..';
-my $grid2 =
-'4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......';
-my $hard1 =
-'.....6....59.....82....8....45........3........6..3.54...325..6..................';
+my $grid1 = '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..';
+my $grid2 = '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......';
+my $hard1 = '.....6....59.....82....8....45........3........6..3.54...325..6..................';
 
 test();
 solve_all( from_file("easy50.txt"),  "easy" );
 solve_all( from_file("top95.txt"),   "hard" );
 solve_all( from_file("hardest.txt"), "hardest" );
-#say print_grid(solve($grid1));
-#say print_grid(solve($grid2));
-#say print_grid(solve($hard1));
 my @random_puzzles;
 push @random_puzzles, random_puzzle(17) for ( 0 .. 99 );
 solve_all( \@random_puzzles, "random" );
