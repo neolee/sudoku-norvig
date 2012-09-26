@@ -119,7 +119,6 @@ sub parse_grid {
 sub assign {
     my ( $values, $s, $d ) = @_;
     return $values if (all {eliminate($values,$s,$_)} grep {$_ ne $d} split(//,$values->{$s}) );
-    #return $values if (all { eliminate($values,$s,$_) } grep {($_ ne $d) && (index($values->{$s},$_) >= 0) } @$cols );
     return 0;
 }
 
