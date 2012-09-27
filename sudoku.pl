@@ -71,8 +71,8 @@ for my $s (@$squares) {
 ################ Unit Tests ################
 
 sub test {
-    die "There are not 81 squares" unless ( scalar(@$squares) == 81 );
-    die "There are not 27 units"   unless ( scalar(@unitlist) == 27 );
+    die "There are not 81 squares" unless ( @$squares == 81 );
+    die "There are not 27 units"   unless ( @unitlist == 27 );
     die "There is a faulty unit"
       unless ( all { scalar( @{ $units{$_} } ) == 3 } @$squares );
     die "There is a faulty peer list"
@@ -104,7 +104,7 @@ sub parse_grid {
     my $values = {};
     $values->{$_} = $digits for ( @{$squares} );
     my @chars = grep { $_ =~ m/[123456789\.]/ } split( //, $grid );
-    die "Something is wrong" unless ( scalar(@chars) == 81 );
+    die "Something is wrong" unless ( @chars == 81 );
     my %g = zip @{$squares}, @chars;
     while ( my ( $s, $d ) = each %g ) {
         if ( ( $d =~ m/[^.]/ ) && ( assign( $values, $s, $d ) == 0 ) ) {
@@ -124,8 +124,10 @@ sub assign {
 
 sub eliminate {
     my ( $values, $s, $d ) = @_;
-    return $values unless ( index( $values->{$s}, $d ) >= 0 );
-    $values->{$s} =~ s/$d//;
+    my $i = index($values->{$s},$d);
+    return $values unless ( $i >= 0 );
+
+    substr($values->{$s},$i,1,'');
     my $len = length( $values->{$s} );
     if ( $len == 0 ) {
         return 0;
@@ -137,7 +139,7 @@ sub eliminate {
     }
     for my $u ( @{ $units{$s} } ) {
         my @dplaces = grep { index( $values->{$_}, $d ) >= 0 } @$u;
-        $len = scalar(@dplaces);
+        $len = @dplaces;
         if ( $len == 0 ) {
             return 0;
         }
@@ -204,7 +206,7 @@ sub print_grid {
 
 sub solve_all {
     my ( $grids, $name ) = @_;
-    my $N = scalar(@$grids);
+    my $N = @$grids;
     my ( @times, @results );
     for (@$grids) {
         my ( $t, $result ) = time_solve($_);
@@ -243,7 +245,7 @@ sub random_puzzle {
             push @ds, $values->{$_};
         }
         my %set = map { $_ => 1 } @ds;
-        if ( ( scalar(@ds) >= $N ) && ( scalar( keys %set ) >= 8 ) ) {
+        if ( ( @ds >= $N ) && ( scalar( keys %set ) >= 8 ) ) {
             return print_grid($values);
         }
     }
