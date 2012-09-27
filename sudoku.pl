@@ -20,6 +20,9 @@ use Storable qw(dclone);
 use File::Slurp;
 use Time::HiRes qw( time );
 
+my $digit_re = qr/\d/;
+my $sudoku_re = qr/[\d.]/;
+
 sub cross {
     my ( $a, $b ) = @_;
     my @cross = ();
@@ -103,11 +106,10 @@ sub parse_grid {
     my $grid   = shift;
     my $values = {};
     $values->{$_} = $digits for ( @{$squares} );
-    my @chars = grep { $_ =~ m/[123456789\.]/ } split( //, $grid );
-    die "Something is wrong" unless ( @chars == 81 );
+    my @chars = grep { $_ =~ m/$sudoku_re/ } split( //, $grid );
     my %g = zip @{$squares}, @chars;
     while ( my ( $s, $d ) = each %g ) {
-        if ( ( $d =~ m/[^.]/ ) && ( assign( $values, $s, $d ) == 0 ) ) {
+        if ( ( $d =~ m/$digit_re/ ) && ( assign( $values, $s, $d ) == 0 ) ) {
             return 0;
         }
     }
