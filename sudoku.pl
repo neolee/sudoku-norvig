@@ -15,12 +15,13 @@
 use strict;
 use warnings;
 use v5.16;
-use List::AllUtils qw(all first zip each_array each_arrayref reduce max shuffle sum);
+use List::AllUtils
+  qw(all first zip each_array each_arrayref reduce max shuffle sum);
 use Storable qw(dclone);
 use File::Slurp;
 use Time::HiRes qw( time );
 
-my $digit_re = qr/\d/;
+my $digit_re  = qr/\d/;
 my $sudoku_re = qr/[\d.]/;
 
 sub cross {
@@ -120,16 +121,18 @@ sub parse_grid {
 
 sub assign {
     my ( $values, $s, $d ) = @_;
-    return $values if (all {eliminate($values,$s,$_)} grep {$_ ne $d} split(//,$values->{$s}) );
+    return $values
+      if ( all { eliminate( $values, $s, $_ ) }
+        grep { $_ ne $d } split( //, $values->{$s} ) );
     return 0;
 }
 
 sub eliminate {
     my ( $values, $s, $d ) = @_;
-    my $i = index($values->{$s},$d);
+    my $i = index( $values->{$s}, $d );
     return $values unless ( $i >= 0 );
 
-    substr($values->{$s},$i,1,'');
+    substr( $values->{$s}, $i, 1, '' );
     my $len = length( $values->{$s} );
     if ( $len == 0 ) {
         return 0;
@@ -162,11 +165,12 @@ sub solve {
 sub search {
     my $values = shift;
     return 0 if ( $values == 0 );
-    return $values if ( all { length( $values->{$_} ) == 1 } @{$squares} ); # solved!
+    return $values
+      if ( all { length( $values->{$_} ) == 1 } @{$squares} );    # solved!
 
     my $s =
       reduce { length( $values->{$a} ) < length( $values->{$b} ) ? $a : $b }
-        grep { length( $values->{$_} ) > 1 } @{$squares};
+    grep { length( $values->{$_} ) > 1 } @{$squares};
 
     my $some = 0;
     for ( split( //, $values->{$s} ) ) {
@@ -216,7 +220,8 @@ sub solve_all {
         push @results, $result;
     }
     if ( $N > 1 ) {
-        printf "Solved %d of %d %s puzzles (avg %.2f secs (%d Hz), max %.2f secs).\n",
+        printf
+"Solved %d of %d %s puzzles (avg %.2f secs (%d Hz), max %.2f secs).\n",
           sum(@results), $N, $name, sum(@times) / $N, $N / sum(@times),
           max(@times);
     }
@@ -255,9 +260,12 @@ sub random_puzzle {
 
 }
 
-my $grid1 = '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..';
-my $grid2 = '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......';
-my $hard1 = '.....6....59.....82....8....45........3........6..3.54...325..6..................';
+my $grid1 =
+'..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..';
+my $grid2 =
+'4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......';
+my $hard1 =
+'.....6....59.....82....8....45........3........6..3.54...325..6..................';
 
 test();
 solve_all( from_file("easy50.txt"),  "easy" );
