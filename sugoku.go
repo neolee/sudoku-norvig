@@ -3,8 +3,12 @@ package main
 import "fmt"
 import "strings"
 
-func cross(a []string, b []string) []string {
+/* All this really could be much nicer, because I really don't know what I'm doing with golang yet. */
+
+func cross(x string, y string) []string {
     result := make([]string,0)
+    a := strings.Split(x,"")
+    b := strings.Split(y,"")
     for _,i := range a {
         for _,j := range b {
             s := []string{i,j}
@@ -15,7 +19,11 @@ func cross(a []string, b []string) []string {
 }
 
 func main() {
-    rows := []string{"A","B","C","D","E","F","G", "H", "I"}
-    cols := []string{"1","2","3","4","5","6","7","8","9"}
+    rows := "ABCDEFGHI"
+    digits := "123456789"
+    cols := digits
     squares := cross(rows,cols)
+    for _,i := range squares {
+        fmt.Println(i)
+    }
 }
