@@ -5,6 +5,7 @@ import "strings"
 
 type unit []string
 type unitgroup []unit
+type peerlist []string
 
 var rows string
 var cols string
@@ -12,6 +13,7 @@ var digits string
 var squares []string
 var unitlist []unit
 var units map[string]unitgroup
+var peers map[string]peerlist
 
 func test() {
 
@@ -76,6 +78,23 @@ func main() {
         units[s] = group
     }
     
-    fmt.Println(units)
+    //fmt.Println(units)
+    
+    peers = make(map[string]peerlist)
+
+    for _,s := range squares {
+        list := make(peerlist,0)
+        for _,unit := range units[s] {
+            for _,square := range unit {
+                if square != s {
+                    list = append(list,square)
+                }
+            }
+        }
+        peers[s] = list
+    }
+
+    fmt.Println(peers)
+
     test()
 }
