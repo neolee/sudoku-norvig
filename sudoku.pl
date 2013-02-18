@@ -12,9 +12,9 @@
 ##   $grid is a grid,e.g. 81 non-blank chars, e.g. starting with '.18...7...
 ##   $values is a dict of possible values, e.g. {'A1':'12349', 'A2':'8', ...}
 
+use 5.016;
 use strict;
 use warnings;
-use v5.16;
 use List::AllUtils
   qw(all first zip each_array each_arrayref reduce max shuffle sum);
 use Storable qw(dclone);
@@ -70,6 +70,12 @@ for my $s (@$squares) {
             $peers{$s}{$s2} = 1 if ( $s2 ne $s );
         }
     }
+
+    my @list;
+    for ( keys %{ $peers{$s} } ) {
+        push @list, $_;
+    }
+    $peers{$s} = \@list;
 }
 
 ################ Unit Tests ################
@@ -80,11 +86,11 @@ sub test {
     die "There is a faulty unit"
       unless ( all { scalar( @{ $units{$_} } ) == 3 } @$squares );
     die "There is a faulty peer list"
-      unless ( all { keys %{ $peers{$_} } == 20 } @$squares );
+      unless ( all { @{ $peers{$_} } == 20 } @$squares );
     my %c2_peers = map { $_ => 1 }
       qw(A2 B2 D2 E2 F2 G2 H2 I2 C1 C3 C4 C5 C6 C7 C8 C9 A1 A3 B1 B3);
 
-    for ( keys $peers{'C2'} ) {
+    for ( @{ $peers{'C2'} } ) {
         die "Faulty peer list" unless ( exists( $c2_peers{$_} ) );
     }
     my @c2_units = (
@@ -143,7 +149,7 @@ sub eliminate {
     elsif ( $len == 1 ) {
         return 0
           unless ( all { eliminate( $values, $_, $values->{$s} ) }
-            keys $peers{$s} );
+            @{ $peers{$s} } );
     }
     for my $u ( @{ $units{$s} } ) {
         my @dplaces = grep { index( $values->{$_}, $d ) >= 0 } @$u;
