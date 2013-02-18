@@ -22,8 +22,25 @@ func test() {
     }
 
     if len(unitlist) != 27 {
-        fmt.Println("The size of unitlist is",len(unitlist))
         panic("wtf, the number of units is not 27")
+    }
+
+    for _,s := range squares {
+        if len(units[s]) != 3 {
+            panic("bad unit")
+        }
+    }
+
+    for _,unit := range units["C2"] {
+        fmt.Println(unit)
+    }
+
+    fmt.Println(peers["C2"])
+
+    for _,s := range squares {
+        if len(peers[s]) != 20 {
+            panic("bad peer list")
+        }
     }
 
 }
@@ -68,8 +85,8 @@ func main() {
     for _,s := range squares {
         group := make(unitgroup,0)
         for _,unit := range unitlist {
-            for _,s2 := range unit {
-                if s2 == s {
+            for _,square := range unit {
+                if square == s {
                     group = append(group,unit)
                     break
                 }
@@ -77,8 +94,6 @@ func main() {
         }
         units[s] = group
     }
-    
-    //fmt.Println(units)
     
     peers = make(map[string]peerlist)
 
@@ -93,8 +108,6 @@ func main() {
         }
         peers[s] = list
     }
-
-    fmt.Println(peers)
 
     test()
 }

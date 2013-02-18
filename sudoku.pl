@@ -64,10 +64,10 @@ for my $s (@$squares) {
 
 my %peers;
 for my $s (@$squares) {
-    $peers{$s} = [];
+    $peers{$s} = {};
     for my $u ( @{ $units{$s} } ) {
         for my $s2 ( @{$u} ) {
-            push( @{ $peers{$s} }, $s2 ) if ( $s2 ne $s );
+            $peers{$s}{$s2} = 1 if ( $s2 ne $s );
         }
     }
 }
@@ -80,10 +80,11 @@ sub test {
     die "There is a faulty unit"
       unless ( all { scalar( @{ $units{$_} } ) == 3 } @$squares );
     die "There is a faulty peer list"
-      unless ( all { ( scalar( @{ $peers{$_} } ) == 24 ) } @$squares );
+      unless ( all { keys %{ $peers{$_} } == 20 } @$squares );
     my %c2_peers = map { $_ => 1 }
       qw(A2 B2 D2 E2 F2 G2 H2 I2 C1 C3 C4 C5 C6 C7 C8 C9 A1 A3 B1 B3);
-    for ( @{ $peers{'C2'} } ) {
+
+    for ( keys $peers{'C2'} ) {
         die "Faulty peer list" unless ( exists( $c2_peers{$_} ) );
     }
     my @c2_units = (
@@ -122,8 +123,10 @@ sub parse_grid {
 sub assign {
     my ( $values, $s, $d ) = @_;
     return $values
-      if ( all { eliminate( $values, $s, $_ ) }
-        grep { $_ ne $d } split( //, $values->{$s} ) );
+      if (
+        all { eliminate( $values, $s, $_ ) }
+        grep { $_ ne $d } split( //, $values->{$s} )
+      );
     return 0;
 }
 
@@ -140,7 +143,7 @@ sub eliminate {
     elsif ( $len == 1 ) {
         return 0
           unless ( all { eliminate( $values, $_, $values->{$s} ) }
-            @{ $peers{$s} } );
+            keys $peers{$s} );
     }
     for my $u ( @{ $units{$s} } ) {
         my @dplaces = grep { index( $values->{$_}, $d ) >= 0 } @$u;
