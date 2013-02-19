@@ -71,11 +71,7 @@ for my $s (@$squares) {
         }
     }
 
-    my @list;
-    for ( keys %{ $peers{$s} } ) {
-        push @list, $_;
-    }
-    $peers{$s} = \@list;
+    $peers{$s} = [ keys %{ $peers{$s} } ]
 }
 
 ################ Unit Tests ################
