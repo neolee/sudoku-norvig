@@ -12,7 +12,7 @@
 ##   $grid is a grid,e.g. 81 non-blank chars, e.g. starting with '.18...7...
 ##   $values is a dict of possible values, e.g. {'A1':'12349', 'A2':'8', ...}
 
-use 5.016;
+use 5.010;
 use strict;
 use warnings;
 use List::AllUtils
