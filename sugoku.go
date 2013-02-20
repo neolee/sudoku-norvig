@@ -2,6 +2,8 @@ package main
 
 import "strings"
 import "fmt"
+import "io/ioutil"
+import "time"
 
 type unit []string
 type unitgroup []unit
@@ -60,7 +62,7 @@ func test() {
 
 // Parse a grid
 
-func parse_grid(grid string) map[string]string {
+func parse_grid(grid string) (map[string]string,bool) {
     solution := make(map[string]string)
     // To start, every square can be any digit; then assign values from the grid.
     for _,s := range squares {
@@ -69,8 +71,7 @@ func parse_grid(grid string) map[string]string {
     puzzle := grid_values(grid)
     for s,d := range puzzle {
         if strings.Contains("123456789",d) {
-            solution,ok= assign(solution,s,d)
-            if !ok {
+            if !assign(solution,s,d) {
                 return solution, false
             }
         }
@@ -81,13 +82,14 @@ func parse_grid(grid string) map[string]string {
 func grid_values(grid string) map[string]string {
     puzzle := make(map[string]string)
     i := 0
-    for c := range strings.Split(grid,"") {
-        if strings.Contains(digits, c) || c == "." {
+    for _,c := range strings.Split(grid,"") {
+        if strings.Contains(digits + ".", c) {
             puzzle[squares[i]] = c            
             i++
         }        
     }    
     if len(puzzle) != 81 {
+        fmt.Println(grid)
         panic("invalid puzzle")
     }
     return puzzle
@@ -96,8 +98,8 @@ func grid_values(grid string) map[string]string {
 // Constraint Propagation
 
 func assign(puzzle map[string]string, s string, d string) bool {
-    other_values := Replace(puzzle[s],s,"",-1)
-    for d2 := range strings.Split(other_values) {
+    other_values := strings.Replace(puzzle[s],s,"",-1)
+    for _,d2 := range strings.Split(other_values,"") {
         if !eliminate(puzzle,s,d2) {
             return false
         }
@@ -109,7 +111,7 @@ func eliminate(puzzle map[string]string, s string, d string) bool {
     if !strings.Contains(puzzle[s],d) {
         return true // Already eliminated
     }
-    puzzle[s] = Replace(puzzle[s],d,"",-1)
+    puzzle[s] = strings.Replace(puzzle[s],d,"",-1)
     // (1) If a square s is reduced to one value d2, then eliminate d2 from the peers.
     if len(puzzle[s]) == 0 {
         return false // Contradiction, removed last value
@@ -122,14 +124,14 @@ func eliminate(puzzle map[string]string, s string, d string) bool {
         }
     }
     // (2) If a unit u is reduced to only one place for a value d, then put it there.
-    for _,u := range units {
-        dplaces := []string
+    for _,u := range units[s] {
+        dplaces := make([]string,0)
         for _,sq := range u {
             if strings.Contains(puzzle[s],d) {
                 dplaces = append(dplaces,sq)
             }
         }
-        num_spots = len(dplaces)
+        num_spots := len(dplaces)
         if num_spots == 0 {
             return false // Contradiction: no place for this value
         } else if num_spots == 1 {
@@ -144,7 +146,11 @@ func eliminate(puzzle map[string]string, s string, d string) bool {
 // Search
 
 func solve(grid string) (map[string]string, bool) {
-    return search(parse_grid(grid))
+    puzzle, ok := parse_grid(grid)
+    if ok {
+        return search(puzzle)
+    }
+    return puzzle,ok
 }
 
 func search(puzzle map[string]string) (map[string]string, bool) {
@@ -153,13 +159,13 @@ func search(puzzle map[string]string) (map[string]string, bool) {
             min_square := "A1"
             min_size := 9
             for _,s := range squares {
-                size = len(puzzle[s])
+                size := len(puzzle[s])
                 if size > 1 && size <= min_size {
                     min_square = s
                     min_size = size
                 }
             }
-            for d := range strings.Split(puzzle[min_square]) {
+            for _,d := range strings.Split(puzzle[min_square],"") {
                 puzzle_copy := make(map[string]string)
                 for k,v := range puzzle {
                     puzzle_copy[k] = v
@@ -172,9 +178,75 @@ func search(puzzle map[string]string) (map[string]string, bool) {
                     }
                 }
             }
+            return puzzle,false
         }
     }
     return puzzle,true
+}
+
+func max(values []int64) int64 {
+    var max int64
+    max = 0
+    for _,v := range values {
+        if v > max {
+            max = v
+        }
+    }
+    return max
+}
+
+func sum(items []int64) int64 {
+    var accum int64
+    accum = 0
+    for _, b := range items {
+        accum += b
+    }
+    return accum
+}
+
+func bool2int(booleans []bool) []int64 {
+    ints := make([]int64,0)
+    for _,b := range booleans {
+        if b {
+            ints = append(ints,1)
+        } else {
+            ints = append(ints,0)
+        }
+    }
+    return ints
+}
+
+func time_solve(grid string) (int64,bool) {
+    start := time.Now()
+    nanos_start := start.UnixNano()
+    _, ok := solve(grid)
+    end := time.Now()
+    nanos_end := end.UnixNano()
+    duration := nanos_end - nanos_start
+    return duration, ok
+}
+
+func from_file(filename string) []string {
+    dat, _ := ioutil.ReadFile(filename)
+    grids := strings.Split(string(dat),"\n")
+    return grids
+}
+
+func solve_all(grids []string, name string) {
+    times := make([]int64,0)
+    results := make([]bool,0)
+    
+    for _,grid := range grids {
+        t,result := time_solve(grid)
+        times = append(times,t)
+        results = append(results,result)
+    }    
+
+    n := len(grids)
+    if n > 1 {
+        fmt.Printf("Solved %d of %d %s puzzles (avg %.2f secs (%d Hz), max %.2f secs).\n",
+            sum(bool2int(results)), n, name, float32(sum(times)) / float32(n), float32(n) / float32(sum(times)), max(times))
+    }
 }
 
 func main() {
@@ -235,6 +307,8 @@ func main() {
     }
 
     test()
-
+    solve_all(from_file("easy50.txt"),"easy")
+    //solve_all(from_file("top95.txt"),"hard")
+    //solve_all(from_file("hardest.txt"),"hardest")
 
 }
