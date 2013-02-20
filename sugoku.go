@@ -95,8 +95,8 @@ func grid_values(grid string) map[string]string {
 
 // Constraint Propagation
 
-func assign(puzzle *map[string]string, s string, d string) bool {
-    other_values := Replace((*puzzle)[s],s,"",-1)
+func assign(puzzle map[string]string, s string, d string) bool {
+    other_values := Replace(puzzle[s],s,"",-1)
     for d2 := range strings.Split(other_values) {
         if !eliminate(puzzle,s,d2) {
             return false
@@ -105,21 +105,41 @@ func assign(puzzle *map[string]string, s string, d string) bool {
     return true
 }
 
-/* TODO: write eliminate
-
-func eliminate(puzzle *map[string]string, s string, d string) (map[string]string,bool) {
+func eliminate(puzzle map[string]string, s string, d string) bool {
+    if !strings.Contains(puzzle[s],d) {
+        return true // Already eliminated
+    }
+    puzzle[s] = Replace(puzzle[s],d,"",-1)
+    // (1) If a square s is reduced to one value d2, then eliminate d2 from the peers.
+    if len(puzzle[s]) == 0 {
+        return false // Contradiction, removed last value
+    } else if len(puzzle[s]) == 1 {
+        d2 := puzzle[s]
+        for _,s2 := range peers[s] {
+            if !eliminate(puzzle,s2,d2) {
+                return false
+            }
+        }
+    }
+    // (2) If a unit u is reduced to only one place for a value d, then put it there.
+    for _,u := range units {
+        dplaces := []string
+        for _,sq := range u {
+            if strings.Contains(puzzle[s],d) {
+                dplaces = append(dplaces,sq)
+            }
+        }
+        num_spots = len(dplaces)
+        if num_spots == 0 {
+            return false // Contradiction: no place for this value
+        } else if num_spots == 1 {
+            if !assign(puzzle,dplaces[0],d) {
+                return false
+            }
+        }        
+    }
+    return true
 }
-
-*/
-
-// Display
-
-/* TODO: write ...
-
-func display(map[string]string) {
-}
-
-*/
 
 // Search
 
@@ -127,7 +147,7 @@ func solve(grid string) (map[string]string, bool) {
     return search(parse_grid(grid))
 }
 
-func search(puzzle *map[string]string) (*map[string]string, bool) {
+func search(puzzle map[string]string) (map[string]string, bool) {
     for _,s := range squares {
         if len(puzzle[s]) != 1 {
             min_square := "A1"
@@ -145,9 +165,8 @@ func search(puzzle *map[string]string) (*map[string]string, bool) {
                     puzzle_copy[k] = v
                 }
                 
-                ok := assign(&puzzle_copy,min_square,d)
-                if ok {
-                    result,ok := search(&puzzle_copy)
+                if assign(puzzle_copy,min_square,d) {
+                    result,ok := search(puzzle_copy)
                     if ok {
                         return result,true
                     }
@@ -155,7 +174,7 @@ func search(puzzle *map[string]string) (*map[string]string, bool) {
             }
         }
     }
-    return puzzle,true        
+    return puzzle,true
 }
 
 func main() {
