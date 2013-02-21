@@ -222,6 +222,14 @@ func time_solve(grid string) (int64, bool) {
         nanos_start := start.UnixNano()
         _, ok := solve(grid)
         end := time.Now()
+        /*
+        fmt.Println(grid)
+        var solved []string
+        for _,sq := range squares {
+            solved = append(solved,puzzle[sq])
+        }
+        fmt.Println(strings.Join(solved,""))
+        */
         nanos_end := end.UnixNano()
         duration := nanos_end - nanos_start
         return duration, ok
