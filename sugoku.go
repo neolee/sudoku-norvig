@@ -249,7 +249,7 @@ func solve_all(grids []string, name string) {
 
         n := len(grids)
         if n > 1 {
-                fmt.Printf("Solved %d of %d %s puzzles (avg %.2f secs (%f Hz), max %.2f secs).\n",
+                fmt.Printf("Solved %d of %d %s puzzles (avg %.4f secs (%.2f Hz), max %.4f secs).\n",
                         sum(bool2int(results)), n, name, float64(nanoconv(sum(times)))/float64(n), float64(n)/float64(nanoconv(sum(times))), nanoconv(max(times)))
         }
 }

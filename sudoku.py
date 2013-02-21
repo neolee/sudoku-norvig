@@ -161,7 +161,7 @@ def solve_all(grids, name='', showif=0.0):
     times, results = zip(*[time_solve(grid) for grid in grids])
     N = len(grids)
     if N > 1:
-        print "Solved %d of %d %s puzzles (avg %.2f secs (%d Hz), max %.2f secs)." % (
+        print "Solved %d of %d %s puzzles (avg %.4f secs (%.2f Hz), max %.4f secs)." % (
             sum(results), N, name, sum(times)/N, N/sum(times), max(times))
 
 def solved(values):
