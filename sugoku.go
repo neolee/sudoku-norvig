@@ -57,6 +57,7 @@ func test() {
 
         /* TODO: need assertions for units["C2"] and peers["C2"] */
 
+        fmt.Println("All tests pass.")
 }
 
 // Parse a grid
@@ -232,6 +233,10 @@ func from_file(filename string) []string {
         return grids[:len(grids)-1]
 }
 
+func nanoconv(nanos int64) float64 {
+    return float64(nanos) / 1000000000.0
+}
+
 func solve_all(grids []string, name string) {
         times := make([]int64, 0)
         results := make([]bool, 0)
@@ -244,8 +249,8 @@ func solve_all(grids []string, name string) {
 
         n := len(grids)
         if n > 1 {
-                fmt.Printf("Solved %d of %d %s puzzles (avg %.2f nanosecs (%f Hz), max %d nanosecs).\n",
-                        sum(bool2int(results)), n, name, float64(sum(times))/float64(n), float64(n)/float64(sum(times)), max(times))
+                fmt.Printf("Solved %d of %d %s puzzles (avg %.2f secs (%f Hz), max %.2f secs).\n",
+                        sum(bool2int(results)), n, name, float64(nanoconv(sum(times)))/float64(n), float64(n)/float64(nanoconv(sum(times))), nanoconv(max(times)))
         }
 }
 
