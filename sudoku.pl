@@ -226,7 +226,7 @@ sub solve_all {
     }
     if ( $N > 1 ) {
         printf
-"Solved %d of %d %s puzzles (avg %.2f secs (%d Hz), max %.2f secs).\n",
+"Solved %d of %d %s puzzles (avg %.4f secs (%.2f Hz), max %.4f secs).\n",
           sum(@results), $N, $name, sum(@times) / $N, $N / sum(@times),
           max(@times);
     }
