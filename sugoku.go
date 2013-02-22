@@ -220,19 +220,19 @@ func bool2int(booleans []bool) []int64 {
 func time_solve(grid string) (int64, bool) {
         start := time.Now()
         nanos_start := start.UnixNano()
-        _, ok := solve(grid)
+        puzzle, _ := solve(grid)
         end := time.Now()
-        /*
-        fmt.Println(grid)
-        var solved []string
-        for _,sq := range squares {
-            solved = append(solved,puzzle[sq])
-        }
-        fmt.Println(strings.Join(solved,""))
-        */
         nanos_end := end.UnixNano()
         duration := nanos_end - nanos_start
-        return duration, ok
+        /*
+           fmt.Println(grid)
+           var solved_ []string
+           for _,sq := range squares {
+               solved_ = append(solved_,puzzle[sq])
+           }
+           fmt.Println(strings.Join(solved_,""))
+        */
+        return duration, solved(puzzle)
 }
 
 func from_file(filename string) []string {
@@ -242,7 +242,7 @@ func from_file(filename string) []string {
 }
 
 func nanoconv(nanos int64) float64 {
-    return float64(nanos) / 1000000000.0
+        return float64(nanos) / 1000000000.0
 }
 
 func solve_all(grids []string, name string) {
@@ -250,9 +250,9 @@ func solve_all(grids []string, name string) {
         results := make([]bool, 0)
 
         for _, grid := range grids {
-            t, result := time_solve(grid)
-            times = append(times, t)
-            results = append(results, result)
+                t, result := time_solve(grid)
+                times = append(times, t)
+                results = append(results, result)
         }
 
         n := len(grids)
@@ -260,6 +260,28 @@ func solve_all(grids []string, name string) {
                 fmt.Printf("Solved %d of %d %s puzzles (avg %.4f secs (%.2f Hz), max %.4f secs).\n",
                         sum(bool2int(results)), n, name, float64(nanoconv(sum(times)))/float64(n), float64(n)/float64(nanoconv(sum(times))), nanoconv(max(times)))
         }
+}
+
+func unit_solved(puzzle map[string]string, unit_ unit) bool {
+        set := make(map[string]int)
+        for _, s := range unit_ {
+                set[puzzle[s]] = 1
+        }
+        for _, d := range strings.Split(digits, "") {
+                if _, ok := set[d]; !ok {
+                        return false
+                }
+        }
+        return true
+}
+
+func solved(puzzle map[string]string) bool {
+        for _, unit_ := range unitlist {
+                if !unit_solved(puzzle, unit_) {
+                        return false
+                }
+        }
+        return true
 }
 
 func main() {
@@ -319,9 +341,14 @@ func main() {
                 peers[s] = peer_list
         }
 
+        /*
+           grid1 := "003020600900305001001806400008102900700000008006708200002609500800203009005010300"
+           grid2 := "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......"
+           hard1 := ".....6....59.....82....8....45........3........6..3.54...325..6.................."            
+        */
         test()
         solve_all(from_file("easy50.txt"), "easy")
-        solve_all(from_file("top95.txt"),"hard")
-        solve_all(from_file("hardest.txt"),"hardest")
+        solve_all(from_file("top95.txt"), "hard")
+        solve_all(from_file("hardest.txt"), "hardest")
 
 }
