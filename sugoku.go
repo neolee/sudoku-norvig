@@ -4,6 +4,7 @@ import "strings"
 import "fmt"
 import "io/ioutil"
 import "time"
+import "math/rand"
 
 type unit []string
 type unitgroup []unit
@@ -17,6 +18,8 @@ var squares []string
 var unitlist []unit
 var units map[string]unitgroup
 var peers map[string]peerlist
+
+const puzzle_n int = 17
 
 func cross(x string, y string) []string {
         result := make([]string, 0)
@@ -284,6 +287,47 @@ func solved(puzzle map[string]string) bool {
         return true
 }
 
+func random_puzzle() string {
+        puzzle := make(map[string]string)
+        for _, s := range squares {
+                puzzle[s] = digits
+        }
+        shuffled := make([]string, len(squares))
+        perm := rand.Perm(len(squares))
+        for i, v := range perm {
+                shuffled[v] = squares[i]
+        }
+        for _, s := range shuffled {
+                elements := strings.Split(puzzle[s], "")
+                if !assign(puzzle, s, elements[rand.Intn(len(elements))]) {
+                        break
+                }
+                ds := make([]string, 0)
+                for _, sq := range squares {
+                        if len(puzzle[sq]) == 1 {
+                                ds = append(ds, puzzle[sq])
+                        }
+                }
+                set := make(map[string]int)
+                for _, sq := range ds {
+                        set[sq] = 1
+                }
+                if len(ds) >= puzzle_n && len(set) >= 8 {
+                        out := make([]string, 0)
+                        for _, sq := range squares {
+                                if len(puzzle[sq]) == 1 {
+                                        out = append(out, puzzle[sq])
+                                } else {
+                                        out = append(out, ".")
+                                }
+                        }
+                        puzzle := strings.Join(out, "")
+                        return puzzle
+                }
+        }
+        return random_puzzle()
+}
+
 func main() {
         rows = "ABCDEFGHI"
         digits = "123456789"
@@ -350,5 +394,9 @@ func main() {
         solve_all(from_file("easy50.txt"), "easy")
         solve_all(from_file("top95.txt"), "hard")
         solve_all(from_file("hardest.txt"), "hardest")
-
+        random_puzzles := make([]string, 0)
+        for j := 0; j < 100; j++ {
+                random_puzzles = append(random_puzzles, random_puzzle())
+        }
+        solve_all(random_puzzles, "random")
 }
