@@ -12,14 +12,17 @@
 ##   $grid is a grid,e.g. 81 non-blank chars, e.g. starting with '.18...7...
 ##   $values is a dict of possible values, e.g. {'A1':'12349', 'A2':'8', ...}
 
+use 5.010;
 use strict;
 use warnings;
-use v5.16;
-use List::MoreUtils qw(all any zip each_array each_arrayref);
-use List::Util qw( reduce max shuffle sum );
+use List::AllUtils
+  qw(all first zip each_array each_arrayref reduce max shuffle sum);
 use Storable qw(dclone);
 use File::Slurp;
 use Time::HiRes qw( time );
+
+my $digit_re  = qr/\d/;
+my $sudoku_re = qr/[\d.]/;
 
 sub cross {
     my ( $a, $b ) = @_;
@@ -61,25 +64,28 @@ for my $s (@$squares) {
 
 my %peers;
 for my $s (@$squares) {
-    $peers{$s} = [];
+    $peers{$s} = {};
     for my $u ( @{ $units{$s} } ) {
         for my $s2 ( @{$u} ) {
-            push( @{ $peers{$s} }, $s2 ) if ( $s2 ne $s );
+            $peers{$s}{$s2} = 1 if ( $s2 ne $s );
         }
     }
+
+    $peers{$s} = [ keys %{ $peers{$s} } ]
 }
 
 ################ Unit Tests ################
 
 sub test {
-    die "There are not 81 squares" unless ( scalar(@$squares) == 81 );
-    die "There are not 27 units"   unless ( scalar(@unitlist) == 27 );
+    die "There are not 81 squares" unless ( @$squares == 81 );
+    die "There are not 27 units"   unless ( @unitlist == 27 );
     die "There is a faulty unit"
       unless ( all { scalar( @{ $units{$_} } ) == 3 } @$squares );
     die "There is a faulty peer list"
-      unless ( all { ( scalar( @{ $peers{$_} } ) == 24 ) } @$squares );
+      unless ( all { @{ $peers{$_} } == 20 } @$squares );
     my %c2_peers = map { $_ => 1 }
       qw(A2 B2 D2 E2 F2 G2 H2 I2 C1 C3 C4 C5 C6 C7 C8 C9 A1 A3 B1 B3);
+
     for ( @{ $peers{'C2'} } ) {
         die "Faulty peer list" unless ( exists( $c2_peers{$_} ) );
     }
@@ -104,35 +110,34 @@ sub parse_grid {
     my $grid   = shift;
     my $values = {};
     $values->{$_} = $digits for ( @{$squares} );
-    my %g = %{ grid_values($grid) };
+    my @chars = grep { $_ =~ m/$sudoku_re/ } split( //, $grid );
+    my %g = zip @{$squares}, @chars;
     while ( my ( $s, $d ) = each %g ) {
-        if ( ( $d =~ m/\d/ ) && ( assign( $values, $s, $d ) == 0 ) ) {
+        if ( ( $d =~ m/$digit_re/ ) && ( assign( $values, $s, $d ) == 0 ) ) {
             return 0;
         }
     }
     return $values;
 }
 
-sub grid_values {
-    my $grid = shift;
-    my @chars = grep { $_ =~ m/[123456789\.]/ } split( //, $grid );
-    die "Something is wrong" unless ( scalar(@chars) == 81 );
-    my %dict = zip @{$squares}, @chars;
-    return \%dict;
-}
-
 ################ Constraint Propagation ################
 
 sub assign {
     my ( $values, $s, $d ) = @_;
-    return $values if (all {eliminate($values,$s,$_)} grep {$_ ne $d} split(//,$values->{$s}) );
+    return $values
+      if (
+        all { eliminate( $values, $s, $_ ) }
+        grep { $_ ne $d } split( //, $values->{$s} )
+      );
     return 0;
 }
 
 sub eliminate {
     my ( $values, $s, $d ) = @_;
-    return $values unless ( index( $values->{$s}, $d ) != -1 );
-    $values->{$s} =~ s/$d//;
+    my $i = index( $values->{$s}, $d );
+    return $values unless ( $i >= 0 );
+
+    substr( $values->{$s}, $i, 1, '' );
     my $len = length( $values->{$s} );
     if ( $len == 0 ) {
         return 0;
@@ -143,8 +148,8 @@ sub eliminate {
             @{ $peers{$s} } );
     }
     for my $u ( @{ $units{$s} } ) {
-        my @dplaces = grep { index( $values->{$_}, $d ) != -1 } @$u;
-        $len = scalar(@dplaces);
+        my @dplaces = grep { index( $values->{$_}, $d ) >= 0 } @$u;
+        $len = @dplaces;
         if ( $len == 0 ) {
             return 0;
         }
@@ -165,9 +170,9 @@ sub solve {
 sub search {
     my $values = shift;
     return 0 if ( $values == 0 );
-    return $values if ( all { length( $values->{$_} ) == 1 } @{$squares} );
+    return $values
+      if ( all { length( $values->{$_} ) == 1 } @{$squares} );    # solved!
 
-    # solved!
     my $s =
       reduce { length( $values->{$a} ) < length( $values->{$b} ) ? $a : $b }
     grep { length( $values->{$_} ) > 1 } @{$squares};
@@ -192,7 +197,6 @@ sub time_solve {
     my $grid   = shift;
     my $start  = time();
     my $values = solve($grid);
-    #say print_grid($values);
     my $t      = time() - $start;
     return ( $t, solved($values) );
 }
@@ -213,7 +217,7 @@ sub print_grid {
 
 sub solve_all {
     my ( $grids, $name ) = @_;
-    my $N = scalar(@$grids);
+    my $N = @$grids;
     my ( @times, @results );
     for (@$grids) {
         my ( $t, $result ) = time_solve($_);
@@ -222,7 +226,7 @@ sub solve_all {
     }
     if ( $N > 1 ) {
         printf
-"Solved %d of %d %s puzzles (avg %.2f secs (%d Hz), max %.2f secs).\n",
+"Solved %d of %d %s puzzles (avg %.4f secs (%.2f Hz), max %.4f secs).\n",
           sum(@results), $N, $name, sum(@times) / $N, $N / sum(@times),
           max(@times);
     }
@@ -241,7 +245,6 @@ sub solved {
 }
 
 sub random_puzzle {
-
     my $N      = shift;
     my $values = {};
     $values->{$_} = $digits for ( @{$squares} );
@@ -254,7 +257,7 @@ sub random_puzzle {
             push @ds, $values->{$_};
         }
         my %set = map { $_ => 1 } @ds;
-        if ( ( scalar(@ds) >= $N ) && ( scalar( keys %set ) >= 8 ) ) {
+        if ( ( @ds >= $N ) && ( scalar( keys %set ) >= 8 ) ) {
             return print_grid($values);
         }
     }
@@ -273,9 +276,6 @@ test();
 solve_all( from_file("easy50.txt"),  "easy" );
 solve_all( from_file("top95.txt"),   "hard" );
 solve_all( from_file("hardest.txt"), "hardest" );
-#say print_grid(solve($grid1));
-#say print_grid(solve($grid2));
-#say print_grid(solve($hard1));
 my @random_puzzles;
 push @random_puzzles, random_puzzle(17) for ( 0 .. 99 );
 solve_all( \@random_puzzles, "random" );
